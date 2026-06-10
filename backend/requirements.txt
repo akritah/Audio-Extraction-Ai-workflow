@@ -1,0 +1,40 @@
+# core web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+
+# audio processing
+librosa==0.10.2
+soundfile==0.12.1
+noisereduce==3.0.2
+
+# speech-to-text  (cpu-only wheels are smaller)
+faster-whisper==1.0.2
+
+# speaker diarization
+# requires HuggingFace token for pyannote model download
+pyannote.audio==3.3.1
+torch==2.3.0
+torchaudio==2.3.0
+
+# NLP
+spacy>=3.8.0
+# after pip install: python -m spacy download en_core_web_trf
+# fallback: python -m spacy download en_core_web_sm
+
+# embeddings + vector DB
+sentence-transformers==3.0.1
+chromadb>=0.6.0
+
+# graph
+networkx==3.3
+
+# calendar file generation
+icalendar==5.0.13
+
+# database
+# sqlite3 is built into Python — no separate package needed
+
+# utilities
+requests==2.32.3
+numpy==1.26.4

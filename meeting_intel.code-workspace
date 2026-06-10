@@ -1,0 +1,51 @@
+{
+  "folders": [
+    { "name": "Backend (Python)", "path": "backend" },
+    { "name": "Frontend (Next.js)", "path": "frontend" },
+    { "name": "Root", "path": "." }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:Backend (Python)}/../venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "editor.formatOnSave": true,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/venv": true,
+      "**/.next": true
+    },
+    "terminal.integrated.env.linux": {
+      "PYTHONPATH": "${workspaceFolder:Backend (Python)}"
+    },
+    "terminal.integrated.env.osx": {
+      "PYTHONPATH": "${workspaceFolder:Backend (Python)}"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.pylance",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "mtxr.sqltools",
+      "rangav.vscode-thunder-client"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Start Backend",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder:Backend (Python)}/main.py",
+        "cwd": "${workspaceFolder:Backend (Python)}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder:Backend (Python)}"
+        }
+      }
+    ]
+  }
+}

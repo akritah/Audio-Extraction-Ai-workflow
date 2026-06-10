@@ -1,0 +1,211 @@
+================================================================
+  MEETING INTELLIGENCE SYSTEM — HOW TO RUN
+================================================================
+
+WHAT YOU NEED INSTALLED BEFORE STARTING
+-----------------------------------------
+1. Python 3.10 or newer        python.org/downloads
+2. Node.js 18 or newer         nodejs.org/en/download
+3. Git                         git-scm.com
+4. FFmpeg                      see below
+5. VSCode                      code.visualstudio.com
+
+FFmpeg install:
+  Ubuntu/Debian:  sudo apt install ffmpeg
+  macOS:          brew install ffmpeg
+  Windows:        winget install ffmpeg
+                  (or download from ffmpeg.org and add to PATH)
+
+
+================================================================
+  STEP 1 — GET A HUGGINGFACE TOKEN  (one-time, free)
+================================================================
+
+The speaker identification model (pyannote) requires you to
+accept a license on HuggingFace before it can be downloaded.
+
+1. Go to https://huggingface.co and create a free account.
+2. Go to https://hf.co/pyannote/speaker-diarization-3.1
+   Click "Agree and access repository"
+3. Also go to https://hf.co/pyannote/segmentation-3.0
+   Click "Agree and access repository"
+4. Go to https://huggingface.co/settings/tokens
+   Click "New token" → name it anything → copy it.
+   It looks like:  hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+================================================================
+  STEP 2 — OPEN THE PROJECT IN VSCODE
+================================================================
+
+1. Unzip / clone the project folder so you have: meeting_intel/
+2. In VSCode: File → Open Workspace from File...
+   Select:  meeting_intel/meeting_intel.code-workspace
+3. VSCode will show two folders in the sidebar:
+     Backend (Python)
+     Frontend (Next.js)
+     Root
+
+Recommended: install the suggested extensions when VSCode asks.
+These are just Python + Tailwind + a REST client for testing.
+
+
+================================================================
+  STEP 3 — CREATE YOUR .env FILE
+================================================================
+
+1. In the Root folder, find .env.example
+2. Copy it and rename the copy to:  .env
+   (same folder, next to .env.example)
+3. Open .env and fill in your HuggingFace token:
+
+     HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+   Leave everything else as-is for now.
+
+
+================================================================
+  STEP 4 — RUN SETUP  (one-time, takes 10-20 minutes)
+================================================================
+
+Open a terminal in VSCode (Ctrl+` or Terminal → New Terminal).
+Make sure you are in the meeting_intel/ root folder, then run:
+
+  bash setup.sh
+
+This will:
+  - Create a Python virtual environment in venv/
+  - Install all Python dependencies
+  - Download the spaCy language model
+  - Install Ollama (the local LLM runner)
+  - Pull the Qwen2.5 7B model (~4GB download)
+  - Install all Node.js dependencies for the frontend
+
+If you are on Windows, run the steps inside setup.sh manually
+one by one in a PowerShell terminal. The commands are standard
+pip/npm — nothing unusual.
+
+
+================================================================
+  STEP 5 — START THE SYSTEM  (every time you use it)
+================================================================
+
+You need THREE terminals running at the same time.
+Open them with the + button in the VSCode terminal panel.
+
+--- Terminal 1: Local LLM ---
+  ollama serve
+
+  Leave this running. You should see:
+  "Ollama is running"
+
+--- Terminal 2: Backend API ---
+  cd backend
+  source ../venv/bin/activate       (Mac/Linux)
+  ..\venv\Scripts\activate          (Windows)
+  python main.py
+
+  Leave this running. You should see:
+  "Uvicorn running on http://0.0.0.0:8000"
+
+--- Terminal 3: Frontend ---
+  cd frontend
+  npm run dev
+
+  Leave this running. You should see:
+  "ready - started server on 0.0.0.0:3000"
+
+Now open your browser and go to:
+  http://localhost:3000
+
+
+================================================================
+  USING THE SYSTEM
+================================================================
+
+1. Dashboard (http://localhost:3000)
+   Drop any .wav or .mp3 meeting recording onto the upload zone.
+   If you know how many people were in the meeting, type the
+   number in the "Known speakers" box — this improves accuracy.
+   Click the file or drag and drop. Processing starts immediately.
+
+2. Meeting Detail Page
+   You are taken there automatically after upload.
+   The page polls every 3 seconds and updates when done.
+   Processing time depends on audio length:
+     ~10 min recording on CPU:  3-8 minutes
+     ~10 min recording on GPU:  30-60 seconds
+   Tabs: Summary / Transcript / Tasks / Events / Graph
+
+3. Tasks (http://localhost:3000/tasks)
+   All extracted tasks across all meetings.
+   Filter by person name or status.
+   Click a task's status badge to cycle through:
+   Pending → In Progress → Done → Blocked
+
+4. Search (http://localhost:3000/search)
+   Natural language search over everything.
+   Examples:
+     Show all tasks assigned to Rahul
+     Find discussions about deployment
+     What decisions were made last week
+     Find all mentions of the budget
+
+5. Calendar (http://localhost:3000/calendar)
+   All detected meeting events with .ics download buttons.
+   Import into Google Calendar: click .ics → open with Calendar.
+
+
+================================================================
+  TROUBLESHOOTING
+================================================================
+
+"Ollama is not running"
+  → Make sure Terminal 1 has `ollama serve` running.
+
+"Upload failed — is the backend running?"
+  → Make sure Terminal 2 has `python main.py` running.
+  → Check Terminal 2 for error messages.
+
+Processing gets stuck / shows "processing" forever
+  → Check Terminal 2 for a traceback.
+  → Most common cause: HF_TOKEN not set, or you didn't accept
+    the pyannote license on HuggingFace (Step 1).
+
+"en_core_web_trf not found"
+  → Run: source venv/bin/activate && python -m spacy download en_core_web_trf
+
+Frontend shows blank page
+  → Make sure Terminal 3 is running.
+  → Try: cd frontend && npm install && npm run dev
+
+Models download on first use
+  → The pyannote diarization model (~1.5GB) downloads on the
+    very first audio upload. Subsequent runs use the cache.
+
+
+================================================================
+  WHAT EACH PORT DOES
+================================================================
+
+  http://localhost:3000   →  the web UI (Next.js)
+  http://localhost:8000   →  the backend API (FastAPI)
+  http://localhost:8000/docs  →  interactive API explorer
+  http://localhost:11434  →  Ollama LLM server (internal)
+
+
+================================================================
+  TO PUSH TO GITHUB
+================================================================
+
+  git init
+  git add .
+  git commit -m "initial commit"
+  git remote add origin https://github.com/akritah/meeting-intel.git
+  git push -u origin main
+
+The .gitignore already excludes venv/, node_modules/, all
+downloaded model weights, and the data/ folder where recordings
+and databases are stored.
+
+================================================================
