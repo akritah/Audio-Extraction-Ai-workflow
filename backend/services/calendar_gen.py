@@ -1,10 +1,15 @@
 import os
 import uuid
+import logging
+import requests
 from datetime import datetime, timedelta
 from icalendar import Calendar, Event
+from db.setup import get_connection
 
 ICS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "ics")
 os.makedirs(ICS_DIR, exist_ok=True)
+
+logger = logging.getLogger("uvicorn")
 
 
 def make_ics(title: str, date_str: str, time_str: str,
@@ -46,3 +51,54 @@ def make_ics(title: str, date_str: str, time_str: str,
         f.write(cal.to_ical())
 
     return path
+
+
+def trigger_calendar_event_webhook(event_id: int):
+    """
+    Fetch the event from DB and send it to Make.com webhook if configured.
+    Executed in a background thread to prevent blocking.
+    """
+    webhook_url = os.environ.get("MAKE_WEBHOOK_URL")
+    if not webhook_url:
+        logger.info("[Integration] MAKE_WEBHOOK_URL is not set. Skipping webhook trigger.")
+        return
+
+    try:
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT id, meeting_id, title, event_date, event_time, participants FROM calendar_events WHERE id=?",
+            (event_id,)
+        ).fetchone()
+        conn.close()
+
+        if not row:
+            logger.warning(f"[Integration] Event {event_id} not found in database.")
+            return
+
+        import json
+        try:
+            participants = json.loads(row["participants"])
+        except Exception:
+            participants = []
+
+        base_url = os.environ.get("BACKEND_BASE_URL", "http://localhost:8000")
+        ics_download_url = f"{base_url.rstrip('/')}/calendar/{row['id']}/download"
+
+        payload = {
+            "event": "meeting_scheduled",
+            "event_id": row["id"],
+            "meeting_id": row["meeting_id"],
+            "title": row["title"],
+            "date": row["event_date"],
+            "time": row["event_time"],
+            "participants": participants,
+            "ics_download_url": ics_download_url
+        }
+
+        logger.info(f"[Integration] Sending calendar event {event_id} to Make.com webhook...")
+        resp = requests.post(webhook_url, json=payload, timeout=10)
+        resp.raise_for_status()
+        logger.info(f"[Integration] Webhook delivered successfully: {resp.status_code}")
+    except Exception as e:
+        logger.error(f"[Integration] Failed to trigger Make.com webhook: {e}")
+

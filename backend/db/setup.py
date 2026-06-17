@@ -10,7 +10,8 @@ os.makedirs(CHROMA_PATH, exist_ok=True)
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -28,6 +29,11 @@ def init_db():
             duration    REAL,
             transcript  TEXT,
             summary     TEXT,
+            status      TEXT DEFAULT 'active',
+            sentiment   TEXT,
+            dominant_emotion TEXT,
+            sentiment_confidence REAL,
+            sentiment_observations TEXT,
             created_at  TEXT DEFAULT (datetime('now'))
         )
     """)
@@ -60,7 +66,12 @@ def init_db():
             speaker     TEXT,
             start_time  REAL,
             end_time    REAL,
-            text        TEXT
+            text        TEXT,
+            emotion     TEXT,
+            emotion_confidence REAL,
+            context_emotion TEXT,
+            context_explanation TEXT,
+            context_emotion_confidence REAL
         )
     """)
 
@@ -71,11 +82,46 @@ def init_db():
             title        TEXT,
             event_date   TEXT,
             event_time   TEXT,
+            end_time     TEXT,
             duration_min INTEGER DEFAULT 60,
             participants TEXT,
             ics_path     TEXT
         )
     """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS automation_logs (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            meeting_id      INTEGER REFERENCES meetings(id),
+            automation_type TEXT NOT NULL,
+            payload         TEXT NOT NULL,
+            status          TEXT NOT NULL,
+            response_code   INTEGER,
+            created_at      TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    # Apply ALTER TABLE migrations for existing databases
+    alterations = [
+        ("meetings", "status", "TEXT DEFAULT 'active'"),
+        ("meetings", "sentiment", "TEXT"),
+        ("meetings", "dominant_emotion", "TEXT"),
+        ("meetings", "sentiment_confidence", "REAL"),
+        ("meetings", "sentiment_observations", "TEXT"),
+        ("speakers", "emotion", "TEXT"),
+        ("speakers", "emotion_confidence", "REAL"),
+        ("speakers", "context_emotion", "TEXT"),
+        ("speakers", "context_explanation", "TEXT"),
+        ("speakers", "context_emotion_confidence", "REAL"),
+        ("calendar_events", "end_time", "TEXT")
+    ]
+
+    for table, column, col_type in alterations:
+        try:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
 
     conn.commit()
     conn.close()

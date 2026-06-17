@@ -94,26 +94,17 @@ def run_pipeline(audio_path: str, meeting_id: int, num_speakers, language: str):
             )
 
         # Stage 7: calendar events
+        from services.automation import process_and_trigger_calendar_event
         for ev in extracted.get("events", []):
-            ics_path = make_ics(
-                title        =ev.get("title", "Meeting"),
-                date_str     =ev.get("date", ""),
-                time_str     =ev.get("time", "10:00"),
-                duration_min =60,
-                participants =ev.get("participants", []),
-                meeting_id   =meeting_id,
-            )
-            c.execute(
-                """INSERT INTO calendar_events
-                   (meeting_id, title, event_date, event_time, participants, ics_path)
-                   VALUES (?,?,?,?,?,?)""",
-                (meeting_id,
-                 ev.get("title"),
-                 ev.get("date"),
-                 ev.get("time"),
-                 json.dumps(ev.get("participants", [])),
-                 ics_path)
-            )
+            if "attendees" not in ev and "participants" in ev:
+                ev["attendees"] = ev["participants"]
+            if "start_time" not in ev and "time" in ev:
+                ev["start_time"] = ev["time"]
+            process_and_trigger_calendar_event(meeting_id, ev, conn)
+
+        # Set status to done since meeting processing completes successfully
+        cursor = conn.cursor()
+        cursor.execute("UPDATE meetings SET status='done' WHERE id=?", (meeting_id,))
 
         conn.commit()
         conn.close()
@@ -145,6 +136,10 @@ def run_pipeline(audio_path: str, meeting_id: int, num_speakers, language: str):
         )
         conn2.commit()
         conn2.close()
+
+        # Trigger Gmail Summary Webhook asynchronously
+        from services.automation import trigger_meeting_summary_automation
+        trigger_meeting_summary_automation(meeting_id)
 
     except Exception as e:
         # mark as failed so the frontend can show an error state

@@ -27,6 +27,7 @@ export default function Home() {
           <span className="font-serif text-2xl text-ink">Meeting Intelligence</span>
           <nav className="flex gap-6 text-sm font-mono text-muted">
             <Link href="/"        className="hover:text-accent">Dashboard</Link>
+            <Link href="/live"    className="hover:text-accent text-indigo-600 font-semibold">Real-Time Meeting</Link>
             <Link href="/tasks"   className="hover:text-accent">Tasks</Link>
             <Link href="/search"  className="hover:text-accent">Search</Link>
             <Link href="/calendar" className="hover:text-accent">Calendar</Link>

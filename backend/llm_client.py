@@ -1,9 +1,14 @@
 import os
 import requests
+from dotenv import load_dotenv
 
-# Ollama runs locally at this endpoint after: `ollama pull qwen2.5:7b`
+# Ensure environment variables are loaded if this module is imported directly
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+
 OLLAMA_URL  = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3:4b")
 
 # Qwen2.5:7b is a good default — strong instruction following, runs on 8GB RAM.
 # Alternatives ranked by accuracy vs speed:

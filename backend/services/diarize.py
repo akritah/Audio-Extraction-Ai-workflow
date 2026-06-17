@@ -1,5 +1,4 @@
 import os
-from pyannote.audio import Pipeline
 
 # Download model once: https://huggingface.co/pyannote/speaker-diarization-3.1
 # Set HF_HOME to a local path so it stays offline after first pull
@@ -12,6 +11,7 @@ _pipeline = None
 def get_pipeline():
     global _pipeline
     if _pipeline is None:
+        from pyannote.audio import Pipeline
         _pipeline = Pipeline.from_pretrained(MODEL_NAME, use_auth_token=HF_TOKEN)
     return _pipeline
 

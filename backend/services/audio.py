@@ -1,8 +1,5 @@
 import os
 import numpy as np
-import librosa
-import soundfile as sf
-import noisereduce as nr
 
 TEMP_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "temp_audio")
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -13,6 +10,10 @@ def load_and_clean(file_path: str) -> str:
     Load audio, reduce background noise, normalize volume,
     and save a cleaned version. Returns path to the cleaned file.
     """
+    import librosa
+    import soundfile as sf
+    import noisereduce as nr
+
     y, sr = librosa.load(file_path, sr=16000, mono=True)
 
     # noise reduction — first 0.5 seconds assumed to be ambient noise
@@ -37,6 +38,9 @@ def split_into_chunks(file_path: str, chunk_sec: int = 300) -> list:
     Helps if diarization or transcription hits memory limits.
     Returns list of file paths.
     """
+    import librosa
+    import soundfile as sf
+
     y, sr = librosa.load(file_path, sr=16000, mono=True)
     total_samples = len(y)
     chunk_samples = chunk_sec * sr

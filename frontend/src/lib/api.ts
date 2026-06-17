@@ -1,6 +1,13 @@
 import axios from "axios"
 
-const api = axios.create({ baseURL: "http://localhost:8000" })
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8000`
+  }
+  return "http://localhost:8000"
+}
+
+const api = axios.create({ baseURL: getBaseURL() })
 
 export async function uploadAudio(file: File, numSpeakers?: number) {
   const form = new FormData()
@@ -55,5 +62,22 @@ export async function getCalendarEvents(meetingId?: number) {
   return data
 }
 
-export const icsDownloadUrl = (eventId: number) =>
-  `http://localhost:8000/calendar/${eventId}/download`
+export const icsDownloadUrl = (eventId: number) => {
+  const base = getBaseURL()
+  return `${base}/calendar/${eventId}/download`
+}
+
+export async function startLiveMeeting(title: string) {
+  const { data } = await api.post("/live/start", { title })
+  return data
+}
+
+export async function queryLiveMeeting(meetingId: number, query: string) {
+  const { data } = await api.post(`/live/${meetingId}/query`, { query })
+  return data
+}
+
+export async function queryMemory(query: string) {
+  const { data } = await api.get("/search/memory", { params: { q: query } })
+  return data
+}

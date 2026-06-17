@@ -1,5 +1,4 @@
 import uuid
-from sentence_transformers import SentenceTransformer
 from db.setup import get_collection
 
 # all-MiniLM-L6-v2 is small (80MB) and fast — good for CPU-only deployment
@@ -13,6 +12,7 @@ CHUNK_SIZE = 300  # characters per chunk
 def get_embedder():
     global _embedder
     if _embedder is None:
+        from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     return _embedder
 
